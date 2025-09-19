@@ -3,7 +3,6 @@ from flask import Blueprint, jsonify, request
 from src.services.data_loader import DataLoader
 from src.services.data_processor import DataProcessor
 from src.utils.logger import get_logger
-from src.utils.cache import cache_response
 from config import Config
 
 covid_routes = Blueprint('covid', __name__)
@@ -12,7 +11,6 @@ data_processor = DataProcessor()
 logger = get_logger(__name__)
 
 @covid_routes.route('/cases', methods=['GET'])
-@cache_response(seconds=300)
 def get_all_data():
     try:
         logger.info("Requête: toutes les données")
