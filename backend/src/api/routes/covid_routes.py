@@ -159,3 +159,86 @@ def get_top_countries():
         
     except Exception as e:
         return jsonify({'error': f'Erreur de récupération du top pays: {str(e)}'}), 500
+
+@covid_routes.route('/data/filtered', methods=['GET'])
+def get_filtered_data():
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        logger.info(f"Requête de données filtrées: {start_date} → {end_date}")
+        
+        raw_df = data_loader.load_data()
+        if raw_df is None or raw_df.empty:
+            return jsonify({'error': 'Aucune donnée disponible'}), 404
+        
+        processed_df = data_processor.process_raw_data(raw_df)
+        
+        if start_date:
+            try:
+                start_dt = pd.to_datetime(start_date)
+                processed_df = processed_df[processed_df['date'] >= start_dt]
+            except:
+                return jsonify({'error': 'Format de date invalide pour start_date (utilisez YYYY-MM-DD)'}), 400
+        
+        if end_date:
+            try:
+                end_dt = pd.to_datetime(end_date)
+                processed_df = processed_df[processed_df['date'] <= end_dt]
+            except:
+                return jsonify({'error': 'Format de date invalide pour end_date (utilisez YYYY-MM-DD)'}), 400
+        
+        if processed_df.empty:
+            return jsonify({'error': 'Aucune donnée trouvée pour cette période'}), 404
+        
+        latest_data = processed_df.groupby('location').last().reset_index()
+        
+        result = []
+        for _, row in latest_data.iterrows():
+            result.append({
+                'country': row['location'],
+                'total_cases': int(row['total_cases']) if pd.notna(row['total_cases']) else 0,
+                'new_cases': int(row['new_cases']) if pd.notna(row['new_cases']) else 0,
+                'total_deaths': int(row['total_deaths']) if pd.notna(row['total_deaths']) else 0,
+                'new_deaths': int(row['new_deaths']) if pd.notna(row['new_deaths']) else 0,
+                'total_recovered': int(row['total_recovered']) if pd.notna(row['total_recovered']) else None,
+                'active_cases': int(row['active_cases']) if pd.notna(row['active_cases']) else None,
+                'last_update': row['date'].isoformat()
+            })
+        
+        logger.info(f"Données filtrées: {len(result)} pays pour période {start_date} → {end_date}")
+        return jsonify({
+            'data': result,
+            'period': {
+                'start_date': start_date,
+                'end_date': end_date,
+                'countries_count': len(result)
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Erreur de filtrage des données: {str(e)}'}), 500
+
+@covid_routes.route('/dates/available', methods=['GET'])
+def get_available_dates():
+    try:
+        logger.info("Requête: dates disponibles")
+        
+        raw_df = data_loader.load_data()
+        if raw_df is None or raw_df.empty:
+            return jsonify({'error': 'Aucune donnée disponible'}), 404
+        
+        processed_df = data_processor.process_raw_data(raw_df)
+        
+        available_dates = sorted(processed_df['date'].dt.strftime('%Y-%m-%d').unique().tolist())
+        
+        logger.info(f"Dates disponibles: {len(available_dates)} dates")
+        return jsonify({
+            'dates': available_dates,
+            'count': len(available_dates),
+            'min_date': available_dates[0] if available_dates else None,
+            'max_date': available_dates[-1] if available_dates else None
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Erreur de récupération des dates: {str(e)}'}), 500
