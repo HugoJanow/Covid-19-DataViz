@@ -10,6 +10,21 @@ data_loader = DataLoader(Config.DATA_FOLDER, Config.CSV_FILE)
 data_processor = DataProcessor()
 logger = get_logger(__name__)
 
+@covid_routes.route('/health', methods=['GET'])
+def health_check():
+    try:
+        return jsonify({
+            'status': 'OK',
+            'message': 'API COVID-19 opérationnelle',
+            'version': '1.0.0'
+        }), 200
+    except Exception as e:
+        logger.error(f"Erreur health check: {e}")
+        return jsonify({
+            'status': 'ERROR',
+            'message': 'Service indisponible'
+        }), 500
+
 @covid_routes.route('/global', methods=['GET'])
 def get_global_stats():
     try:
