@@ -6,6 +6,9 @@ import BarChart from './components/BarChart';
 import TimelineChart from './components/TimelineChart';
 import CountryComparator from './components/CountryComparator';
 import WorldMap from './components/WorldMapNew';
+import CovidTablePage from './components/CovidTablePage';
+import TrendsChart from './components/TrendsChart';
+import HeatmapChart from './components/HeatmapChart';
 
 function App() {
   const { 
@@ -244,6 +247,30 @@ function App() {
       );
     }
 
+    if (activeTab === 'trends') {
+      return (
+        <div className="content-container">
+          <TrendsChart data={allData || []} />
+        </div>
+      );
+    }
+
+    if (activeTab === 'heatmap') {
+      return (
+        <div className="content-container">
+          <HeatmapChart data={allData || []} />
+        </div>
+      );
+    }
+
+    if (activeTab === 'table') {
+      return (
+        <div className="content-container">
+          <CovidTablePage />
+        </div>
+      );
+    }
+
     return null;
   };
 
@@ -336,6 +363,48 @@ function App() {
             }}
           >
              Carte Mondiale
+          </button>
+          <button
+            onClick={() => setActiveTab('trends')}
+            style={{
+              padding: '0.8rem 1.5rem',
+              borderRadius: '15px',
+              border: 'none',
+              background: activeTab === 'trends' ? 'var(--gradient-main)' : 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+             Tendances
+          </button>
+          <button
+            onClick={() => setActiveTab('heatmap')}
+            style={{
+              padding: '0.8rem 1.5rem',
+              borderRadius: '15px',
+              border: 'none',
+              background: activeTab === 'heatmap' ? 'var(--gradient-main)' : 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+             Heatmap
+          </button>
+          <button
+            onClick={() => setActiveTab('table')}
+            style={{
+              padding: '0.8rem 1.5rem',
+              borderRadius: '15px',
+              border: 'none',
+              background: activeTab === 'table' ? 'var(--gradient-main)' : 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+             Tableau Récapitulatif
           </button>
           <button
             onClick={refreshData}
