@@ -1,0 +1,90 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Run linting
+      working-directory: ./frontend
+      run: npm run lint
+      continue-on-error: true
+    
+    - name: Run tests
+      working-directory: ./frontend
+      run: npm test -- --watchAll=false --passWithNoTests
+      env:
+        CI: true
+    
+    - name: Build application
+      working-directory: ./frontend
+      run: npm run build
+      env:
+        CI: false
+        REACT_APP_API_URL: https://covid-dataviz-api.onrender.com/api
+  
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Build for production
+      working-directory: ./frontend
+      run: npm run build
+      env:
+        CI: false
+        REACT_APP_API_URL: https://covid-dataviz-api.onrender.com/api
+    
+    - name: Install Vercel CLI
+      run: npm install -g vercel
+    
+    - name: Deploy to Vercel
+      working-directory: ./frontend
+      run: |
+        vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
